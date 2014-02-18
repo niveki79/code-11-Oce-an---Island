@@ -1,0 +1,259 @@
+<html>
+	<head>
+		<title>Water</title>
+		<style>canvas { width: 100%; height: 100% }</style>
+	</head>
+	<body>
+		<script src="fichiers/three.min.js"></script>
+		<script src="fichiers/FlyControls.js"></script>
+		<script src="fichiers/Mirror.js"></script>
+		<script src="fichiers/WaterShader.js"></script>
+		<script src="fichiers/OBJLoader.js"></script>
+		<script src="fichiers/threex.daynight.js"></script>
+		<body style='margin: 0px; background-color: #bbbbbb; overflow: hidden;'><script>
+	
+
+			var w = window.innerWidth;
+			var h = window.innerHeight;
+			var camera = new THREE.PerspectiveCamera( 45, w/h, 0.5, 3000000 );
+			var renderer = new THREE.WebGLRenderer();
+			var control = new THREE.FlyControls(camera);
+			var parameters = {
+			    width: 2000,
+			    height: 2000,
+			    widthSegments: 250,
+			    heightSegments: 250,
+			    depth: 1500,
+			    param: 4,
+			    filterparam: 1
+
+			}
+			var container;
+			var dt = 30;
+			var waterNormals;
+			
+					
+					
+					control.dragToLook = true;
+					  control.movementSpeed = 10;
+					  control.rollSpeed = 0.0005;
+					
+					
+
+
+			container = document.createElement( 'div' );
+   			document.body.appendChild( container );
+
+			renderer = new THREE.WebGLRenderer( { antialias: true } );
+    		renderer.setSize( window.innerWidth, window.innerHeight );
+    		container.appendChild( renderer.domElement );
+
+  
+
+init();
+
+
+	function init() {
+
+     // Ocean
+							  scene = new THREE.Scene();
+
+							  camera.position.set( 0, Math.max( parameters.width * 1.5, parameters.height ) / 8, parameters.height );
+					    	  camera.lookAt( new THREE.Vector3( 0, 0, 0 ) );
+
+
+									waterNormals = new THREE.ImageUtils.loadTexture( 'textures/waternormals2.png' );
+					    			waterNormals.wrapS = waterNormals.wrapT = THREE.RepeatWrapping;
+
+					    water = new THREE.Water( renderer, camera, scene, {
+					        textureWidth: 512,
+					        textureHeight: 512,
+					        waterNormals: waterNormals,
+					        alpha: 	1.0,
+					        waterColor: 0x001e0f,
+					        distortionScale: 50.0
+					    } );
+
+
+					    mirrorMesh = new THREE.Mesh(
+					        new THREE.PlaneGeometry( parameters.width * 500, parameters.height * 500, 50, 50 ),
+					        water.material
+					    );
+
+
+					    mirrorMesh.add( water );
+					    mirrorMesh.rotation.x = - Math.PI * 0.5;
+					    scene.add( mirrorMesh );
+
+						//light
+
+								/*var ambientLight = new THREE.AmbientLight(0xffffff);
+					    			ambientLight.position.x = 10;
+					    			ambientLight.position.y = 1000;
+					    			ambientLight.position.z = 10;
+					        		scene.add(ambientLight);*/
+
+
+					        	;
+
+		
+		//terrain load object OBJ with textures
+			
+for ( var i =0; i < 15; i ++) {
+
+				var manager = new THREE.LoadingManager();
+				manager.onProgress = function ( item, loaded, total ) {
+
+					console.log( item, loaded, total );
+
+				};
+
+				var texture = new THREE.Texture();
+
+				var loader = new THREE.ImageLoader( manager );
+				loader.load( 'textures/grass.jpg', function ( image ) {
+
+					texture.image = image;
+					texture.needsUpdate = true;
+
+				} );
+
+			
+
+				var loader = new THREE.OBJLoader( manager );
+				loader.load( 'OBJ/Terrain.obj', function ( object ) {
+
+					object.traverse( function ( child ) {
+
+						if ( child instanceof THREE.Mesh ) {
+
+							child.material.map = texture;
+
+						}
+
+					} );
+
+					object.position.y = - 5;
+
+					object.scale.x = 1 * 18;
+					object.scale.y = 1 * 15;
+					object.scale.z = 1 * 15;
+
+					
+			object.position.x = ( Math.random() - 0.5 ) * 100000;
+			object.position.z = ( Math.random() - 0.5 ) * 100000;
+			object.updateMatrix();
+			object.matrixAutoUpdate = false;
+			scene.add( object );
+} );
+};	
+
+	// fog 
+
+
+				//scene.fog = new THREE.FogExp2( 0xffffff, 0.0001 );
+ 
+
+    // skybox
+
+		    /*var imagePrefix = "skybox/";
+		 var directions  = ["px", "nx", "py", "ny", "pz", "nz"];
+		 var imageSuffix = ".jpg";
+		   
+		 var materialArray = [];
+		 for (var i = 0; i < 6; i++)
+		  materialArray.push( new THREE.MeshBasicMaterial({
+		   map: THREE.ImageUtils.loadTexture( imagePrefix + directions[i] + imageSuffix ),
+		   side: THREE.BackSide
+		  }));
+		  
+		 var skyGeometry = new THREE.CubeGeometry( 10000, 10000, 10000 );
+		 var skyMaterial = new THREE.MeshFaceMaterial( materialArray );
+		 var skyBox = new THREE.Mesh( skyGeometry, skyMaterial );
+		 skyBox.rotation.x += Math.PI / 2;
+		 scene.add( skyBox ); */
+
+	//Axes
+
+		/*var axes = new THREE.AxisHelper(700);
+    		scene.add(axes);*/
+
+
+    // sky by Jerome Etienne
+		
+		var onRenderFcts= [];
+
+    	var sunAngle = -1/6*Math.PI*2;
+	onRenderFcts.push(function(delta, now){
+		var dayDuration	= 150
+		sunAngle	-= delta/dayDuration * Math.PI*2
+	})
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		sunSphere							//
+	//////////////////////////////////////////////////////////////////////////////////
+	
+	var sunSphere	= new THREEx.DayNight.SunSphere()
+	scene.add( sunSphere.object3d )
+	onRenderFcts.push(function(delta, now){
+		sunSphere.update(sunAngle)
+	})
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		directionalLight						//
+	//////////////////////////////////////////////////////////////////////////////////
+        
+
+	var sunLight	= new THREEx.DayNight.SunLight()
+	scene.add( sunLight.object3d )
+	onRenderFcts.push(function(delta, now){
+		sunLight.update(sunAngle)
+	})
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		skydom								//
+	//////////////////////////////////////////////////////////////////////////////////
+	
+	var skydom	= new THREEx.DayNight.Skydom()
+	scene.add( skydom.object3d )
+	onRenderFcts.push(function(delta, now){
+		skydom.update(sunAngle)
+	})
+
+
+
+
+			var render = function () {
+				requestAnimationFrame(render);
+				
+				water.material.uniforms.time.value += 3.0 / 160.0;
+    			water.render();
+
+				//renderer.setClearColor( 0xCCFFFF, 1 );
+
+				control.update(dt);
+				renderer.render(scene, camera);
+			};
+
+
+			var lastTimeMsec= null
+	requestAnimationFrame(function animate(nowMsec){
+		// keep looping
+		requestAnimationFrame( animate );
+		// measure time
+		lastTimeMsec	= lastTimeMsec || nowMsec-1000/60
+		var deltaMsec	= Math.min(200, nowMsec - lastTimeMsec)
+		lastTimeMsec	= nowMsec
+		// call each update function
+		onRenderFcts.forEach(function(onRenderFct){
+			onRenderFct(deltaMsec/1000, nowMsec/1000)
+		})
+	})
+
+			
+			render();
+};
+
+		</script>
+	</body>
+</html>
